@@ -13,21 +13,20 @@ class Notes extends Table {
   TextColumn get title => text()();
   TextColumn get content => text()();
   DateTimeColumn get createdAt => dateTime()();
-  BoolColumn get isDeleted =>
-      boolean().withDefault(const Constant(false))();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-
 class SyncQueue extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get noteId => text()();
+  IntColumn get noteId => integer()();
   TextColumn get operationType => text()();
   IntColumn get timestamp => integer()();
-  IntColumn get retryCount =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get retryCount => integer().withDefault(const Constant(0))();
 }
 
 @DriftDatabase(tables: [Notes, SyncQueue])
@@ -40,23 +39,32 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Note>> watchNotes() =>
       (select(notes)..where((t) => t.isDeleted.equals(false))).watch();
 
-  Future<void> insertNote(NotesCompanion note) =>
-      into(notes).insert(note);
+  Future<void> insertNote(NotesCompanion note) => into(notes).insert(note);
 
-  Future<void> addToQueue(String id, String type) =>
-      into(syncQueue).insert(
+  Future<void> addToQueue(String id, String type) => into(syncQueue).insert(
         SyncQueueCompanion.insert(
-          noteId: id,
+          noteId: int.parse(id),
           operationType: type,
           timestamp: DateTime.now().millisecondsSinceEpoch,
         ),
       );
 
-  Future<List<SyncQueueData>> getQueueItems() =>
-      select(syncQueue).get();
+  Future<List<SyncQueueData>> getQueueItems() => select(syncQueue).get();
 
   Future<void> removeQueueItem(int id) =>
       (delete(syncQueue)..where((t) => t.id.equals(id))).go();
+
+  Future<Note?> getNoteById(int id) {
+    return (select(notes)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> markNoteSynced(int id) {
+    return (update(notes)..where((t) => t.id.equals(id))).write(
+      const NotesCompanion(
+        isSynced: Value(true),
+      ),
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

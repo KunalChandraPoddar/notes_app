@@ -48,6 +48,12 @@ class NotesPage extends StatelessWidget {
               child: ListTile(
                 title: Text(note.title),
                 subtitle: Text(note.content),
+                onTap: () {
+                  Get.toNamed(
+                    AppRoutes.addNote,
+                    arguments: note,
+                  );
+                },
               ),
             );
           },

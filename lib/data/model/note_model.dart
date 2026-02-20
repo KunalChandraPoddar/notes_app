@@ -11,10 +11,15 @@ class NoteModel {
   @JsonKey(name: AppStrings.body)
   final String content;
 
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
   NoteModel({
     this.id,
     required this.title,
     required this.content,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory NoteModel.fromJson(Map<String, dynamic> json) =>

@@ -20,27 +20,18 @@ class NotesController extends BaseController {
   }
 
   Future<void> addNote(String title, String content) async {
-    try {
-      showLoading();
-      clearError();
-
+    await runWithHandling(() async {
       await repository.createNote(title, content);
-
-    } catch (e) {
-      setError(e.toString());
-    } finally {
-      hideLoading();
-    }
+    });
   }
 
   Future<void> syncNow() async {
-    try {
-      isSyncing.value = true;
+    isSyncing.value = true;
+
+    await runWithHandling(() async {
       await repository.sync();
-    } catch (e) {
-      setError(e.toString());
-    } finally {
-      isSyncing.value = false;
-    }
+    });
+
+    isSyncing.value = false;
   }
 }

@@ -1,37 +1,79 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
+import 'package:drift/drift.dart' as drift;
+import 'package:notes_app/data/constants/app_strings.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/model/note_model.dart';
 import 'package:notes_app/data/remote/notes_api_client.dart';
-import 'package:drift/drift.dart' as drift;
 
 class SyncService {
   final AppDatabase db;
   final NotesApiClient api;
 
-  SyncService(this.db, this.api);
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription? _subscription;
+
+  SyncService(this.db, this.api) {
+    _listenToConnectivity();
+  }
+
+  void _listenToConnectivity() {
+    _subscription = _connectivity.onConnectivityChanged.listen(
+      (result) {
+        if (result != ConnectivityResult.none) {
+          performSync();
+        }
+      },
+    );
+  }
+
+  Future<bool> _hasInternet() async {
+    final result = await _connectivity.checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
 
   Future<void> performSync() async {
-    final queueItems = await db.getQueueItems();
+    final hasInternet = await _hasInternet();
+    if (!hasInternet) return;
 
+    final queueItems = await db.getQueueItems();
+    
     for (final item in queueItems) {
       try {
-
         final note = await (db.select(db.notes)
-              ..where((t) => t.id.equals(int.parse(item.noteId))))
+              ..where((t) => t.id.equals(item.noteId)))
             .getSingle();
 
-        await api.addNote(
-          NoteModel(
-            id: note.id,
-            title: note.title,
-            content: note.content,
-          ),
-        );
+        if (item.operationType == AppStrings.createOperation) {
+          await api.addNote(
+            NoteModel(
+              id: note.id,
+              title: note.title,
+              content: note.content,
+            ),
+          );
+        }
+
+        if (item.operationType == AppStrings.updateOperation) {
+          await api.updateNote(
+            note.id,
+            NoteModel(
+              id: note.id,
+              title: note.title,
+              content: note.content,
+            ),
+          );
+        }
 
         await db.removeQueueItem(item.id);
       } catch (e) {
         await _incrementRetry(item);
       }
     }
+  }
+
+  Future<void> dispose() async {
+    await _subscription?.cancel();
   }
 
   Future<void> _incrementRetry(SyncQueueData item) async {

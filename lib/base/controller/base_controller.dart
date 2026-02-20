@@ -5,16 +5,24 @@ abstract class BaseController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = RxnString();
 
-  void showLoading() => isLoading.value = true;
+  Future<T?> runWithHandling<T>(
+    Future<T> Function() action,
+  ) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = null;
 
-  void hideLoading() => isLoading.value = false;
-
-  void setError(String message) {
-    errorMessage.value = message;
-    Get.snackbar(AppStrings.error, message);
+      return await action();
+    } catch (e) {
+      handleError(e);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  void clearError() {
-    errorMessage.value = null;
+  void handleError(Object error) {
+    errorMessage.value = error.toString();
+    Get.snackbar(AppStrings.error, error.toString());
   }
 }

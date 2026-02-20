@@ -14,4 +14,10 @@ abstract class NotesApiClient {
 
   @POST(AppStrings.postsEndpoint)
   Future<NoteModel> addNote(@Body() NoteModel note);
+
+  @PUT("${AppStrings.postsEndpoint}/{id}")
+  Future<NoteModel> updateNote(
+    @Path("id") int id,
+    @Body() NoteModel note,
+  );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:notes_app/base/controller/base_controller.dart';
+import '../../data/local/database/app_database.dart';
 import '../../data/repository/notes_repository.dart';
 
 class AddNoteController extends BaseController {
@@ -11,22 +12,39 @@ class AddNoteController extends BaseController {
   final titleController = TextEditingController();
   final contentController = TextEditingController();
 
-  Future<void> saveNote() async {
-    try {
-      showLoading();
+  Note? existingNote;
 
-      await repository.createNote(titleController.text, contentController.text);
+  @override
+  void onInit() {
+    super.onInit();
 
-      if (Get.isOverlaysOpen) {
-        Get.back(); 
-      } else {
-        Get.back();
-      }
-    } catch (e) {
-      setError(e.toString());
-    } finally {
-      hideLoading();
+    existingNote = Get.arguments as Note?;
+
+    if (existingNote != null) {
+      titleController.text = existingNote!.title;
+      contentController.text = existingNote!.content;
     }
+  }
+
+  bool get isEditMode => existingNote != null;
+
+  Future<void> saveNote() async {
+    await runWithHandling(() async {
+      if (isEditMode) {
+        await repository.updateNote(
+          existingNote!.id,
+          titleController.text,
+          contentController.text,
+        );
+      } else {
+        await repository.createNote(
+          titleController.text,
+          contentController.text,
+        );
+      }
+
+      Get.back();
+    });
   }
 
   @override

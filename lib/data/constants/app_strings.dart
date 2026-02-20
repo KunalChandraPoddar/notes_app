@@ -1,5 +1,4 @@
 class AppStrings {
-
   static const String addNoteTitle = "Add Note";
 
   static const String contentType = "Content-Type";
@@ -7,7 +6,9 @@ class AppStrings {
 
   static const String notesDatabaseName = 'notes.sqlite';
 
+  static const String messageKey = 'message';
   static const String error = 'Error';
+  static const String errorMessage = "Network error occurred";
 
   static const String body = "body";
 
@@ -25,4 +26,6 @@ class AppStrings {
 
   static const String titleLabel = "Title";
   static const String contentLabel = "Content";
+
+  static const updateOperation = "UPDATE";
 }
