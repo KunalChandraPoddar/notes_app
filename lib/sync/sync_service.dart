@@ -4,16 +4,16 @@ import 'package:drift/drift.dart' as drift;
 import 'package:notes_app/data/constants/app_strings.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/model/note_model.dart';
-import 'package:notes_app/data/remote/notes_api_client.dart';
+import 'package:notes_app/data/remote/note_remote_data_source.dart';
 
 class SyncService {
   final AppDatabase db;
-  final NotesApiClient api;
+  final NoteRemoteDataSource remoteDataSource;
 
   final Connectivity _connectivity = Connectivity();
   StreamSubscription? _subscription;
 
-  SyncService(this.db, this.api) {
+  SyncService(this.db, this.remoteDataSource) {
     _listenToConnectivity();
   }
 
@@ -45,7 +45,7 @@ class SyncService {
             .getSingle();
 
         if (item.operationType == AppStrings.createOperation) {
-          await api.addNote(
+          await remoteDataSource.addNote(
             NoteModel(
               id: note.id,
               title: note.title,
@@ -55,7 +55,7 @@ class SyncService {
         }
 
         if (item.operationType == AppStrings.updateOperation) {
-          await api.updateNote(
+          await remoteDataSource.updateNote(
             note.id,
             NoteModel(
               id: note.id,
